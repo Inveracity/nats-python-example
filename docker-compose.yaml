@@ -4,6 +4,21 @@ services:
     image: nats:2-alpine
     container_name: nats
     ports:
-      - "80:8222"
+      - "8222:8222"
       - "4222:4222"
     command: nats-server -m 8222 -D
+
+  rethinkdb:
+    image: rethinkdb:2.4.0
+    container_name: rethinkdb
+    ports:
+      - "8080:8080"
+      - "28015:28015"
+    command: rethinkdb -d /data/rdb --bind 0.0.0.0 --server-tag default --http-port 8080 --driver-port 28015
+    volumes:
+      - type: bind
+        source: /srv
+        target: /data/rdb
+
+volumes:
+  rdbdata:

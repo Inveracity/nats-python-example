@@ -7,6 +7,13 @@ verify_ssl = true
 
 [packages]
 asyncio-nats-client = "*"
+rethinkdb = "*"
 
 [requires]
 python_version = "3.8"
+
+[scripts]
+init = "python database.py"
+worker = "python worker.py"
+distributor = "python distributor.py"
+generate = "python generate_tasks.py"
