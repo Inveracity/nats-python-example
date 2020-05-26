@@ -67,7 +67,7 @@ async def next_task(worker_id):
     task.worker_id = worker_id
 
     try:
-        # Tell distributor to send a new_task task
+        # Tell distributor to send a new task
         response = await nc.request(subject=config['subject'], payload=task.to_json().encode(), timeout=10)
 
         # Get JSON formatted data and populate task
@@ -79,7 +79,7 @@ async def next_task(worker_id):
         # Do work on that task
         task = worker(task)
 
-        # Fail a task if it was attempted 2 times and failed both
+        # Fail a task if it was attempted x times
         if task.state == "ready" and task.attempts >= 5:
             task.state = "failed"
             log.error(f"Task failed: {task.id}")
