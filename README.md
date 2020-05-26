@@ -49,7 +49,7 @@ pipenv run worker
 
 ## Rethinkdb
 
-You can open the rethinkdb webinterface with `http:localhost:8080`
+You can open the rethinkdb webinterface with `http://localhost:8080`
 
 In the data explorer try the query
 
