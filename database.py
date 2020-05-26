@@ -45,30 +45,36 @@ def init() -> None:
             print(f"Creating table '{table}'")
             r.db(DATABASE).table_create(table).run(conn)
 
-    db = r.db(DATABASE)
 
-
-def get_work_item() -> dict:
+def task_get_new() -> dict:
     """ fetch a single work item in ready state """
 
     conn = connect(DATABASE)
-    task = r.table(task_queue).filter({"state": "ready"}).limit(1).run(conn)
+    ret = r.table(task_queue).filter({"state": "ready"}).limit(1).run(conn)
 
-    return list(task)
+    try:
+        task = list(ret)[0]
+    except IndexError:
+        task = {}
+
+    return task
 
 
-def create_work_item(work_item: dict) -> None:
+def task_create(task: dict) -> None:
     """ Insert new work item """
     conn = connect(DATABASE)
-    return r.table(task_queue).insert(work_item).run(conn)
+    return r.table(task_queue).insert(task).run(conn)
 
 
-def update_work_item_state(_id: str, value: str) -> None:
-    """ update work item state """
-    print(_id, value)
+def task_update(task: dict) -> None:
+    """
+    update work item state
+    valid states should be: "ready", "active", "complete", "failed"
+    """
+
     conn = connect(DATABASE)
-    res = r.table(task_queue).get(_id).update({"state": value}).run(conn)
-    print(res)
+    r.table(task_queue).insert(task, conflict="update").run(conn)
+
 
 if __name__ == "__main__":
     init()

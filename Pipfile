@@ -4,6 +4,7 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+flake8 = "*"
 
 [packages]
 asyncio-nats-client = "*"
@@ -17,3 +18,4 @@ init = "python database.py"
 worker = "python worker.py"
 distributor = "python distributor.py"
 generate = "python generate_tasks.py"
+lint = "python -m flake8"
