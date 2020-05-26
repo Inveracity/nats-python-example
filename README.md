@@ -6,11 +6,30 @@ Working out the best way to do request/reply for distributing tasks
 
 ![](docs/images/gif.gif)
 
+## Overview
+
+1. Requests for new workloads go into the database
+2. A worker continuously polls the distributor for new tasks
+3. For every poll the distributor takes a new task in the `ready` state
+4. The distributor marks the task  as `active` and forwards it to the worker
+5. The worker processes the task
+6. if the task fails it gets marked as `ready` and attempts increases by 1 and the worker request a new job
+7. if the task succeeds it gets marked as `completed` and the worker requests a new job
+8. When a task has been attempted X amount of times it gets marked as `failed`
+
+![](docs/images/diagram.png)
+
+### A few tidbits
+
+This setup works as microservice setup where every component can be scaled to horizontally meaning
+that _Rethinkdb_, _NATS_, _Distributor_ and _Worker_ can all have multiple instances running simultaneously.
+
+The _Distributor_ listens for polls on a loadbalanced queue, a feature of _NATS_ that works without configuration.
+
 ## Dependencies
 
 - python 3.8
 - docker-compose
-
 
 ## Install requirements
 
