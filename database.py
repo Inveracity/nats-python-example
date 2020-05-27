@@ -9,7 +9,7 @@ from rethinkdb.errors import ReqlDriverError
 DATABASE = 'work'
 task_queue = 'tasks'
 TABLES = [task_queue]
-
+INDEXES = ["time_last"]
 
 def connect(db: str = None) -> r.connection_type:
     """ connect to database """
@@ -45,12 +45,17 @@ def init() -> None:
             print(f"Creating table '{table}'")
             r.db(DATABASE).table_create(table).run(conn)
 
+        for index in INDEXES:
+            if index not in r.db(DATABASE).table(table).index_list().run(conn):
+                print(f"Creating index '{index}'")
+                r.db(DATABASE).table(table).index_create(index).run(conn)
+
 
 def task_get_new() -> dict:
     """ fetch a single work item in ready state """
 
     conn = connect(DATABASE)
-    ret = r.table(task_queue).filter({"state": "ready"}).limit(1).run(conn)
+    ret = r.table(task_queue).order_by(index='time_last').filter({"state": "ready"}).limit(1).run(conn)
 
     try:
         task = list(ret)[0]
