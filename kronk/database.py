@@ -1,3 +1,4 @@
+import time
 from sys import exit
 
 from config import config
@@ -10,6 +11,9 @@ DATABASE = 'work'
 task_queue = 'tasks'
 TABLES = [task_queue]
 INDEXES = ["time_last"]
+# TODO: Adding logging here instead of printing with flush=True
+# Infact make this whole thing a class
+
 
 def connect(db: str = None) -> r.connection_type:
     """ connect to database """
@@ -17,37 +21,48 @@ def connect(db: str = None) -> r.connection_type:
     host  = config["rdb_endpoint"]
     passw = config["rdb_password"]
 
-    try:
-        conn = r.connect(host=host, password=passw, db=db)
+    return r.connect(host=host, password=passw, db=db)
 
-    except ReqlAuthError:
-        print("Error: Wrong password. If you are using docker-compose, check the password there!")
-        exit(1)
 
-    except ReqlDriverError:
-        print("Error: Unable to connect to rethinkdb")
-        exit(1)
+def connect_with_retry(database):
+    # TODO: Make this nicer somehow
+    conn = None
+    for x in range(1, 30):
+        try:
+            try:
+                conn = connect(database)
+
+            except ReqlAuthError:
+                print("Error: Wrong password. If you are using docker-compose, check the password there!", flush=True)
+                exit(1)
+
+            except Exception:
+                print(f"connecting to database - attempt {x}", flush=True)
+                time.sleep(2)
+                continue
+            break
+        except KeyboardInterrupt:
+            exit(0)
 
     return conn
 
-
 def init() -> None:
     """ Initialise database """
-
-    conn = connect(DATABASE)
+    print("Initialising database", flush=True)
+    conn = connect_with_retry(DATABASE)
 
     if DATABASE not in r.db_list().run(conn):
-        print(f"Creating database '{DATABASE}'")
+        print(f"Creating database '{DATABASE}'", flush=True)
         r.db_create(DATABASE).run(conn)
 
     for table in TABLES:
         if table not in r.db(DATABASE).table_list().run(conn):
-            print(f"Creating table '{table}'")
+            print(f"Creating table '{table}'", flush=True)
             r.db(DATABASE).table_create(table).run(conn)
 
         for index in INDEXES:
             if index not in r.db(DATABASE).table(table).index_list().run(conn):
-                print(f"Creating index '{index}'")
+                print(f"Creating index '{index}'", flush=True)
                 r.db(DATABASE).table(table).index_create(index).run(conn)
 
 

@@ -20,7 +20,6 @@ services:
         source: /srv
         target: /data/rdb
 
-
   worker:
     image: kronk:latest
     container_name: worker

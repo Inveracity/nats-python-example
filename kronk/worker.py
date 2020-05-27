@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 nc = NATS()
 
 
-def simulation() -> (str, str):
+def simulation() -> (int, str):
     """ Create a random execution time for a simulated job """
 
     task_short    = [1] * 60  # 60% chance of a job taking a short time
@@ -45,13 +45,11 @@ def simulation() -> (str, str):
 def worker(task: Task):
     """ Simulated worker, replace this code with actual workloads """
 
-    # Simulate fake work on task
+    # Get simulation values
     length, state = simulation()
 
-    log.info(f"Task BEGN: {task.id}")
-
-    for _ in range(length):
-        time.sleep(1)
+    # Simulate fake work on task
+    time.sleep(length)
 
     # Set the state
     task.state = state
@@ -76,6 +74,7 @@ async def next_task(worker_id: str):
         task.id       = loaded_task["id"]
         task.attempts = loaded_task["attempts"]
 
+        log.info(f"Task BEGN: {task.id}")
         # Do work on that task
         task = worker(task)
 

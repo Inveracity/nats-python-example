@@ -18,8 +18,11 @@ class Task:
     def time_last(self):
         return self.time()
 
-    def to_dict(self):
-        # Dynamically update timestamp by fetching the class propery and apply it as if it was an attribute
+    def to_dict(self) -> dict:
+        """
+        Dynamically update timestamp by fetching the
+        class property and apply it as if it was an attribute
+        """
         # make a dict of @properties
         properties = inspect.getmembers(self.__class__, lambda o: isinstance(o, property))
         property_dict = {name: prop.fget(self) for name, prop in properties}
@@ -29,5 +32,5 @@ class Task:
         superdict.update(property_dict)
         return superdict
 
-    def to_json(self):
+    def to_json(self) -> str:
         return dumps(self.to_dict())

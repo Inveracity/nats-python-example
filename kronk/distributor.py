@@ -2,11 +2,12 @@ import asyncio
 import json
 import logging
 import traceback
+import time
 
 from nats.aio.client import Client as NATS
 
 from config import config
-from database import task_get_new, task_update
+from database import task_get_new, task_update, init
 from task import Task
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)-7s] %(message)s')
@@ -80,6 +81,7 @@ def prep_task(task: Task) -> str:
 
 
 if __name__ == '__main__':
+    init()
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run(loop))
     loop.run_forever()

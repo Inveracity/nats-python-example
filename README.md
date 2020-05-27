@@ -43,7 +43,7 @@ pipenv install
 This starts NATS2 and Rethinkdb 2.4.0
 
 ```bash
-docker-compose up -d
+docker-compose up --build -d
 ```
 
 ## Run the code
@@ -54,15 +54,10 @@ Put some fake tasks in the database
 pipenv run generate
 ```
 
-Start the distributor
+optionally start the distributor and worker in a terminal instead through docker-compose
 
 ```bash
 pipenv run distributor
-```
-
-Start a worker
-
-```bash
 pipenv run worker
 ```
 
