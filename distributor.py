@@ -74,7 +74,7 @@ def prep_task(task: Task) -> str:
         # Set work item state to active
         task_update(task.to_dict())
 
-        log.info(f"Sending task: {task.workload} to worker: {task.worker_id}")
+        log.info(f"Sending task: {task.id} to worker: {task.worker_id}")
 
         return task.to_json()
 

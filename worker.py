@@ -19,7 +19,7 @@ nc = NATS()
 # to ensure events occured as expected between worker and distributor
 worker_id = str(uuid.uuid4())[:8]
 
-logging.basicConfig(level=logging.INFO, format=f'%(asctime)s [%(levelname)s] {worker_id}: %(message)s')
+logging.basicConfig(level=logging.INFO, format=f'%(asctime)s [%(levelname)-7s] {worker_id}: %(message)s')
 log = logging.getLogger(__name__)
 
 
@@ -49,7 +49,7 @@ def worker(task):
     # Simulate fake work on task
     length, state = simulation()
 
-    log.info(f"starting work on task: {task.workload}")
+    log.info(f"Task BEGN: {task.id}")
 
     for _ in range(length):
         time.sleep(1)
@@ -81,11 +81,14 @@ async def next_task(worker_id):
 
         # Fail a task if it was attempted x times
         if task.state == "ready" and task.attempts >= 5:
-            log.error(f"Task {task.state}: {task.id}")
+            log.error(f"Task FAIL: {task.id}")
             task.state = "failed"
 
+        if task.state == "ready":
+            log.warning(f"Task RETR: {task.id}")
+
         if task.state == "complete":
-            log.info(f"Task {task.state}: {task.id} ")
+            log.info(f"Task COMP: {task.id} ")
 
         # Update task in database
         task_update(task.to_dict())
