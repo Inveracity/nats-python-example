@@ -20,5 +20,22 @@ services:
         source: /srv
         target: /data/rdb
 
+
+  worker:
+    image: kronk:latest
+    container_name: worker
+    build:
+      context: .
+      dockerfile: docker/base.Dockerfile
+    command: pipenv run worker
+
+  distributor:
+    image: kronk:latest
+    container_name: distributor
+    build:
+      context: .
+      dockerfile: docker/base.Dockerfile
+    command: pipenv run distributor
+
 volumes:
   rdbdata:
