@@ -25,7 +25,7 @@ def connect(db: str = None) -> r.connection_type:
         exit(1)
 
     except ReqlDriverError:
-        print("Error: Unable to connect to server")
+        print("Error: Unable to connect to rethinkdb")
         exit(1)
 
     return conn

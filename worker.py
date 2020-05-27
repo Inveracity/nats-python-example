@@ -68,7 +68,7 @@ async def next_task(worker_id):
 
     try:
         # Tell distributor to send a new task
-        response = await nc.request(subject=config['subject'], payload=task.to_json().encode(), timeout=10)
+        response = await nc.request(subject=config['subject'], payload=task.to_json().encode(), timeout=1)
 
         # Get JSON formatted data and populate task
         loaded_task   = json.loads(response.data.decode())
@@ -81,10 +81,13 @@ async def next_task(worker_id):
 
         # Fail a task if it was attempted x times
         if task.state == "ready" and task.attempts >= 5:
+            log.error(f"Task {task.state}: {task.id}")
             task.state = "failed"
-            log.error(f"Task failed: {task.id}")
 
-        # Update task state
+        if task.state == "complete":
+            log.info(f"Task {task.state}: {task.id} ")
+
+        # Update task in database
         task_update(task.to_dict())
 
     except asyncio.TimeoutError:
