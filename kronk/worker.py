@@ -12,15 +12,14 @@ from config import config
 from database import task_update
 from task import Task
 
-nats_servers = ["nats://10.0.0.2:4222"]
-nc = NATS()
-
-# For tracing logs a unique ID is create on start,
-# to ensure events occured as expected between worker and distributor
+# Create worker id on start
 worker_id = str(uuid.uuid4())[:8]
 
+# Set worker id in logging format
 logging.basicConfig(level=logging.INFO, format=f'%(asctime)s [%(levelname)-7s] {worker_id}: %(message)s')
 log = logging.getLogger(__name__)
+
+nc = NATS()
 
 
 def simulation() -> (str, str):
@@ -43,7 +42,7 @@ def simulation() -> (str, str):
     return task_length, task_state
 
 
-def worker(task):
+def worker(task: Task):
     """ Simulated worker, replace this code with actual workloads """
 
     # Simulate fake work on task
@@ -61,7 +60,8 @@ def worker(task):
     return task
 
 
-async def next_task(worker_id):
+async def next_task(worker_id: str):
+    """ Request a new task from the distributor """
     task           = Task()
     task.state     = "new"
     task.worker_id = worker_id
@@ -84,9 +84,11 @@ async def next_task(worker_id):
             log.error(f"Task FAIL: {task.id}")
             task.state = "failed"
 
+        # Put the task back to be picked up for another attempt
         if task.state == "ready":
             log.warning(f"Task RETR: {task.id}")
 
+        # Mark the task as complete for no further processing
         if task.state == "complete":
             log.info(f"Task COMP: {task.id} ")
 
@@ -94,24 +96,27 @@ async def next_task(worker_id):
         task_update(task.to_dict())
 
     except asyncio.TimeoutError:
-        # Simply waiting for a task to come along
+        # Simply wait for a task to come along
         log.debug("No new task")
         pass
 
     except Exception:
-        log.error(traceback.format_exc())
+        log.fatal(traceback.format_exc())
         exit(1)
 
 
 async def main():
+    """ Start the worker loop """
     loop = asyncio.get_running_loop()
 
     log.info(f"Starting worker {worker_id}")
-    await nc.connect(servers=nats_servers, loop=loop)
+
+    # Connect to nats servers
+    await nc.connect(servers=config['nats_endpoint'], loop=loop)
 
     while True:
         await next_task(worker_id)
-        time.sleep(1)
+        time.sleep(0.1)
 
 
 if __name__ == '__main__':

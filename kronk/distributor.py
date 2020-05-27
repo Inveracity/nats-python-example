@@ -9,7 +9,7 @@ from config import config
 from database import task_get_new, task_update
 from task import Task
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)-7s] %(message)s')
 log = logging.getLogger(__name__)
 
 nc           = NATS()

@@ -14,8 +14,8 @@ rethinkdb = "*"
 python_version = "3.8"
 
 [scripts]
-init = "python database.py"
-worker = "python worker.py"
-distributor = "python distributor.py"
-generate = "python generate_tasks.py"
+init = "python kronk/database.py"
+worker = "python kronk/worker.py"
+distributor = "python kronk/distributor.py"
+generate = "python kronk/generate_tasks.py"
 lint = "python -m flake8"

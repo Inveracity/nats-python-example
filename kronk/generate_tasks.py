@@ -8,7 +8,7 @@ from task import Task
 
 task = Task()
 
-for x in range(10):
+for x in range(100):
     random_chars  = sample(ascii_letters, 10)
     random_string = "".join(random_chars)
     task.workload = random_string
@@ -19,4 +19,4 @@ for x in range(10):
 
     task_create(task.to_dict())
 
-    time.sleep(2)
+    time.sleep(0.2)
