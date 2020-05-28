@@ -27,6 +27,9 @@ services:
       context: .
       dockerfile: docker/base.Dockerfile
     command: pipenv run worker
+    environment:
+      - RDB_ENDPOINT=rethinkdb
+      - NATS_ENDPOINT=nats://nats:4222
 
   distributor:
     image: kronk:latest
@@ -35,6 +38,9 @@ services:
       context: .
       dockerfile: docker/base.Dockerfile
     command: pipenv run distributor
+    environment:
+      - RDB_ENDPOINT=rethinkdb
+      - NATS_ENDPOINT=nats://nats:4222
 
 volumes:
   rdbdata:
