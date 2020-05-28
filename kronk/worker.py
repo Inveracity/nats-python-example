@@ -20,6 +20,7 @@ log = logging.getLogger(__name__)
 nc  = Nats()
 rdb = Rethink()
 
+
 def simulation() -> (int, str):
     """ Create a random execution time for a simulated job """
 
@@ -40,7 +41,7 @@ def simulation() -> (int, str):
     return task_length, task_state
 
 
-def worker(task: Task):
+def worker(task: Task) -> Task:
     """ Simulated worker, replace this code with actual workloads """
 
     # Get simulation values

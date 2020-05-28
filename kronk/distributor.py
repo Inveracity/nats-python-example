@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import traceback
-import time
 
 from nats.aio.client import Client as NATS
 

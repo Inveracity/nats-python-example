@@ -1,6 +1,5 @@
 import time
 import logging
-import traceback
 from sys import exit
 
 from config import config
@@ -117,13 +116,11 @@ class Rethink:
 
         return task
 
-
     def task_create(self, task: dict) -> None:
         """ Insert new work item """
 
         self.connect_with_retry()
         return r.table(self.TABLE).insert(task).run(self.conn)
-
 
     def task_update(self, task: dict) -> None:
         """
@@ -133,8 +130,3 @@ class Rethink:
 
         self.connect_with_retry()
         r.table(self.TABLE).insert(task, conflict="update").run(self.conn)
-
-
-if __name__ == "__main__":
-    rdb = Rethink()
-    rdb.init()
