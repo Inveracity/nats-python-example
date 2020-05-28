@@ -1,100 +1,137 @@
 import time
+import logging
+import traceback
 from sys import exit
 
 from config import config
 
 from rethinkdb import r
+from rethinkdb.net import DefaultConnection
 from rethinkdb.errors import ReqlAuthError
 from rethinkdb.errors import ReqlDriverError
 
-DATABASE = 'work'
-task_queue = 'tasks'
-TABLES = [task_queue]
-INDEXES = ["time_last"]
-# TODO: Adding logging here instead of printing with flush=True
-# Infact make this whole thing a class
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)-7s]: %(message)s')
+log = logging.getLogger(__name__)
 
 
-def connect(db: str = None) -> r.connection_type:
-    """ connect to database """
-    conn  = None
-    host  = config["rdb_endpoint"]
-    passw = config["rdb_password"]
+class Rethink:
+    def __init__(
+        self,
+        database='work',
+        table='tasks',
+        user="admin",
+        password=None,
+        indexes=['time_last']
+    ):
+        self.HOST    = config["rdb_endpoint"]
+        self.PW      = config['rdb_password']
+        self.USER    = user
+        self.DB      = database
+        self.TABLE   = table
+        self.INDEXES = indexes
 
-    return r.connect(host=host, password=passw, db=db)
+        self.conn = DefaultConnection(
+            host=self.HOST,
+            port=28015,
+            db=self.DB,
+            auth_key=None,
+            user=self.USER,
+            password=self.PW,
+            timeout=None,
+            ssl=None,
+            _handshake_version=None
+        )
 
+        self.connect_with_retry()
 
-def connect_with_retry(database):
-    # TODO: Make this nicer somehow
-    conn = None
-    for x in range(1, 30):
         try:
+            log.info("rethinkdb initialising")
+
+            # Create databases
+            db_exists = r.db_list().contains(self.DB).run(self.conn)
+            if not db_exists:
+                log.info(f'creating database {self.DB}')
+                r.db_create(self.DB).run(self.conn)
+
+            # Create tables
+            table_exists = r.db(self.DB).table_list().contains(self.TABLE).run(self.conn)
+
+            if not table_exists:
+                log.info(f'adding table {self.TABLE}')
+                r.db(self.DB).table_create(self.TABLE).run(self.conn)
+
+            # Create indexes
+            rtable = r.db(self.DB).table(self.TABLE)
+
+            current_indexes = rtable.index_list().run(self.conn)
+            for index in self.INDEXES:
+                if index not in current_indexes:
+                    log.info(f'adding index {index}')
+                    rtable.index_create(index).run(self.conn)
+
+            log.info("rethinkdb ready")
+
+        except ReqlDriverError as err:
+            log.error(f"rethinkdb failed to initialise: {err}")
+            exit(1)
+
+    def connect(self):
+        if self.conn.is_open():
+            self.conn.close()
+
+        self.conn = r.connect(host=self.HOST, db=self.DB, user=self.USER, password=self.PW)
+
+    def connect_with_retry(self):
+        """ Attempt to reconnect """
+        for x in range(10):
             try:
-                conn = connect(database)
+                try:
+                    self.connect()
 
-            except ReqlAuthError:
-                print("Error: Wrong password. If you are using docker-compose, check the password there!", flush=True)
-                exit(1)
+                except ReqlAuthError as err:
+                    log.fatal(err)
+                    exit(1)
 
-            except Exception:
-                print(f"connecting to database - attempt {x}", flush=True)
-                time.sleep(2)
-                continue
-            break
-        except KeyboardInterrupt:
-            exit(0)
+                except Exception:
+                    log.info(f"connecting to database - attempt {x}")
+                    time.sleep(2)
+                    continue
+                break
 
-    return conn
+            except KeyboardInterrupt:
+                exit(0)
 
-def init() -> None:
-    """ Initialise database """
-    print("Initialising database", flush=True)
-    conn = connect_with_retry(DATABASE)
+    def task_get_new(self) -> dict:
+        """ fetch a single work item in ready state """
 
-    if DATABASE not in r.db_list().run(conn):
-        print(f"Creating database '{DATABASE}'", flush=True)
-        r.db_create(DATABASE).run(conn)
+        self.connect_with_retry()
+        ret = r.table(self.TABLE).order_by(index='time_last').filter({"state": "ready"}).limit(1).run(self.conn)
 
-    for table in TABLES:
-        if table not in r.db(DATABASE).table_list().run(conn):
-            print(f"Creating table '{table}'", flush=True)
-            r.db(DATABASE).table_create(table).run(conn)
+        try:
+            task = list(ret)[0]
+        except IndexError:
+            task = {}
 
-        for index in INDEXES:
-            if index not in r.db(DATABASE).table(table).index_list().run(conn):
-                print(f"Creating index '{index}'", flush=True)
-                r.db(DATABASE).table(table).index_create(index).run(conn)
+        return task
 
 
-def task_get_new() -> dict:
-    """ fetch a single work item in ready state """
+    def task_create(self, task: dict) -> None:
+        """ Insert new work item """
 
-    conn = connect(DATABASE)
-    ret = r.table(task_queue).order_by(index='time_last').filter({"state": "ready"}).limit(1).run(conn)
-
-    try:
-        task = list(ret)[0]
-    except IndexError:
-        task = {}
-
-    return task
+        self.connect_with_retry()
+        return r.table(self.TABLE).insert(task).run(self.conn)
 
 
-def task_create(task: dict) -> None:
-    """ Insert new work item """
-    conn = connect(DATABASE)
-    return r.table(task_queue).insert(task).run(conn)
+    def task_update(self, task: dict) -> None:
+        """
+        update work item state
+        valid states should be: "ready", "active", "complete", "failed"
+        """
 
-
-def task_update(task: dict) -> None:
-    """
-    update work item state
-    valid states should be: "ready", "active", "complete", "failed"
-    """
-
-    conn = connect(DATABASE)
-    r.table(task_queue).insert(task, conflict="update").run(conn)
+        self.connect_with_retry()
+        r.table(self.TABLE).insert(task, conflict="update").run(self.conn)
 
 
 if __name__ == "__main__":
-    init()
+    rdb = Rethink()
+    rdb.init()

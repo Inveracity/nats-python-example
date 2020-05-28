@@ -7,15 +7,15 @@ import time
 from nats.aio.client import Client as NATS
 
 from config import config
-from database import task_get_new, task_update, init
+from database import Rethink
 from task import Task
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)-7s] %(message)s')
 log = logging.getLogger(__name__)
 
+rdb          = Rethink()
 nc           = NATS()
 nats_servers = config['nats_endpoint']
-subject      = config.get("subject", "task")
 queue        = config.get("queue")
 worker_id    = None
 task_id      = None
@@ -25,7 +25,7 @@ state        = None
 async def run(loop):
     log.info(f'Starting nats client. Server: {nats_servers}')
     await nc.connect(servers=nats_servers, loop=loop)
-    await nc.subscribe(subject=config['subject'], queue=config['queue'], cb=sub)
+    await nc.subscribe(subject="task", queue="workers", cb=sub)
 
 
 async def sub(msg):
@@ -60,7 +60,7 @@ def prep_task(task: Task) -> str:
     """
 
     # Get new work item from database
-    new_task = task_get_new()
+    new_task = rdb.task_get_new()
 
     # If nothing is available return empty string
     if not new_task:
@@ -73,7 +73,7 @@ def prep_task(task: Task) -> str:
         task.state    = "active"
 
         # Set work item state to active
-        task_update(task.to_dict())
+        rdb.task_update(task.to_dict())
 
         log.info(f"Sending task: {task.id} to worker: {task.worker_id}")
 
@@ -81,7 +81,6 @@ def prep_task(task: Task) -> str:
 
 
 if __name__ == '__main__':
-    init()
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run(loop))
     loop.run_forever()

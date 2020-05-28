@@ -17,7 +17,7 @@ services:
     command: rethinkdb -d /data/rdb --bind 0.0.0.0 --server-tag default --http-port 8080 --driver-port 28015
     volumes:
       - type: bind
-        source: /srv
+        source: /srv # Swap this for something more appropriate
         target: /data/rdb
 
   worker:

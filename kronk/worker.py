@@ -5,11 +5,9 @@ import time
 import traceback
 import uuid
 from random import choice
-
-from nats.aio.client import Client as NATS
-
+from nats.aio.client import Client as Nats
 from config import config
-from database import task_update
+from database import Rethink
 from task import Task
 
 # Create worker id on start
@@ -19,25 +17,25 @@ worker_id = str(uuid.uuid4())[:8]
 logging.basicConfig(level=logging.INFO, format=f'%(asctime)s [%(levelname)-7s] {worker_id}: %(message)s')
 log = logging.getLogger(__name__)
 
-nc = NATS()
-
+nc  = Nats()
+rdb = Rethink()
 
 def simulation() -> (int, str):
     """ Create a random execution time for a simulated job """
 
-    task_short    = [1] * 60  # 60% chance of a job taking a short time
-    task_medium   = [2] * 30  # 30% chance of a job taking a medium time
-    task_long     = [3] * 10  # 10% chance of a job taking a long time
-    task_fail     = ["ready"] * 50  # 50% chance of a job failing, set ready state to retry the job
-    task_complete = ["complete"] * 50  # 50% chance of a job completing
+    task_shor = [1] * 60           # 60% chance of a job taking a short time
+    task_medi = [2] * 30           # 30% chance of a job taking a medium time
+    task_long = [3] * 10           # 10% chance of a job taking a long time
+    task_fail = ["ready"] * 50     # 50% chance of a job failing, set ready state to retry the job
+    task_comp = ["complete"] * 50  # 50% chance of a job completing
 
     # Compile to lists
-    task_lengths = task_short + task_medium + task_long
-    task_states   = task_fail + task_complete
+    task_lengths = task_shor + task_medi + task_long
+    task_states  = task_fail + task_comp
 
     # Grab some value
     task_length = choice(task_lengths)
-    task_state = choice(task_states)
+    task_state  = choice(task_states)
 
     return task_length, task_state
 
@@ -66,7 +64,7 @@ async def next_task(worker_id: str):
 
     try:
         # Tell distributor to send a new task
-        response = await nc.request(subject=config['subject'], payload=task.to_json().encode(), timeout=1)
+        response = await nc.request(subject="task", payload=task.to_json().encode(), timeout=1)
 
         # Get JSON formatted data and populate task
         loaded_task   = json.loads(response.data.decode())
@@ -92,7 +90,7 @@ async def next_task(worker_id: str):
             log.info(f"Task COMP: {task.id} ")
 
         # Update task in database
-        task_update(task.to_dict())
+        rdb.task_update(task.to_dict())
 
     except asyncio.TimeoutError:
         # Simply wait for a task to come along
