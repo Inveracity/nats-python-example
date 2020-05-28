@@ -105,7 +105,10 @@ class Rethink:
         """ fetch a single work item in ready state """
 
         self.connect_with_retry()
-        ret = r.table(self.TABLE).order_by(index='time_last').filter({"state": "ready"}).limit(1).run(self.conn)
+
+        t = r.table(self.TABLE)
+        t.wait(timeout=1).run(self.conn)  # wait for shards to be ready
+        ret = t.order_by(index='time_last').filter({"state": "ready"}).limit(1).run(self.conn)
 
         try:
             task = list(ret)[0]
