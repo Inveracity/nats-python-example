@@ -9,7 +9,7 @@ services:
     command: nats-server -m 8222 -D
 
   rethinkdb:
-    image: rethinkdb:2.4.0
+    image: rethinkdb:2.4.1
     container_name: rethinkdb
     ports:
       - "8080:8080"
@@ -28,8 +28,10 @@ services:
       dockerfile: docker/base.Dockerfile
     command: pipenv run worker
     environment:
-      - RDB_ENDPOINT=rethinkdb
-      - NATS_ENDPOINT=nats://nats:4222
+      - DB_HOST=rethinkdb
+      - DB_PORT=28015
+      - NATS_HOST=nats
+      - NATS_PORT=4222
 
   distributor:
     image: kronk:latest
@@ -39,8 +41,10 @@ services:
       dockerfile: docker/base.Dockerfile
     command: pipenv run distributor
     environment:
-      - RDB_ENDPOINT=rethinkdb
-      - NATS_ENDPOINT=nats://nats:4222
+      - DB_HOST=rethinkdb
+      - DB_PORT=28015
+      - NATS_HOST=nats
+      - NATS_PORT=4222
 
 volumes:
   rdbdata:
