@@ -1,0 +1,79 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Initialise Database",
+            "command": "pipenv",
+            "args": [
+                "run",
+                "init"
+            ],
+            "type": "shell",
+            "problemMatcher": []
+        },
+        {
+            "label": "nats",
+            "command": "servers/nats-server.exe",
+            "args": [
+                "-m",
+                "8222"
+            ],
+            "type": "shell",
+            "isBackground": true,
+            "problemMatcher": [
+                {
+                    "pattern": [
+                        {
+                            "regexp": ".",
+                            "file": 1,
+                            "location": 2,
+                            "message": 3
+                        }
+                    ],
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".",
+                        "endsPattern": ".",
+                    }
+                }
+            ]
+        },
+        {
+            "label": "rethinkdb",
+            "command": "servers/rethinkdb.exe",
+            "args": [
+                "--http-port",
+                "8081",
+                "-d",
+                "servers\\rethinkdb_data"
+            ],
+            "type": "shell",
+            "isBackground": true,
+            "problemMatcher": [
+                {
+                    "pattern": [
+                        {
+                            "regexp": ".",
+                            "file": 1,
+                            "location": 2,
+                            "message": 3
+                        }
+                    ],
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": ".",
+                        "endsPattern": ".",
+                    }
+                }
+            ]
+        },
+        {
+            "label": "Servers",
+            "dependsOn": [
+                "nats",
+                "rethinkdb",
+                "Initialise Database"
+            ]
+        }
+    ]
+}
