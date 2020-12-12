@@ -40,7 +40,7 @@ pipenv install
 
 ## Run the backend
 
-This starts NATS2 and Rethinkdb 2.4.0
+This starts NATS and Rethinkdb 2.4.1
 
 ```bash
 docker-compose up --build -d
