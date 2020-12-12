@@ -2,85 +2,86 @@ import asyncio
 import json
 import logging
 import traceback
+from typing import Optional
 
 from nats.aio.client import Client as NATS
 
-from config import config
-from database import Rethink
-from task import Task
+from kronk.config import Config
+from kronk.database import Rethink
+from kronk.task import Task
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)-7s] %(message)s')
 log = logging.getLogger(__name__)
 
-rdb          = Rethink()
-nc           = NATS()
-nats_servers = config['nats_endpoint']
-queue        = config.get("queue")
-worker_id    = None
-task_id      = None
-state        = None
+config = Config()
+nc = NATS()
+rdb = Rethink()
 
 
-async def run(loop):
-    log.info(f'Starting nats client. Server: {nats_servers}')
-    await nc.connect(servers=nats_servers, loop=loop)
-    await nc.subscribe(subject="task", queue="workers", cb=sub)
-
-
-async def sub(msg):
-    task = Task()
-
-    try:
-        # Process incoming message from worker
-        message = json.loads(msg.data.decode())
-
-        task.worker_id = message["worker_id"]
-        task.state     = message['state']
-        task.id        = message['id']
-
-        # If worker is ready to receive a new task, the state is "new"
-        # else update the task with the status received from the worker
-        if task.state == "new":
-            # Get a new task
-            payload = prep_task(task)
-
-            # Send the task to worker
-            if payload:
-                await nc.publish(subject=msg.reply, payload=payload.encode())
-
-    except Exception:
-        log.error(traceback.format_exc())
-
-
-def prep_task(task: Task) -> str:
+class Distributor:
     """
-    Fetch a task from the database and convert it to JSON
-    Increment the attempts by 1 to keep track of task retries
+    The Distributor receives requests for new work
+    from the workers and sends back a task ID for the
+    worker to process.
     """
 
-    # Get new work item from database
-    new_task = rdb.task_get_new()
+    def prep_task(self, worker_id: str) -> Optional[str]:
+        """
+        Assign task to worker
+        """
+        task: Task = rdb.task_get_new()
+        log.debug(task)
+        if not task:
+            return None
 
-    # If nothing is available return empty string
-    if not new_task:
-        return ""
+        task.worker_id = worker_id
+        assigned: bool = rdb.task_assign_worker(task)
 
-    else:
-        task.id       = new_task['id']
-        task.workload = new_task['workload']
-        task.attempts = new_task["attempts"] + 1
-        task.state    = "active"
+        if not assigned:
+            task.log("warning", f"Task is already assigned to worker {task.worker_id}")
+            return None
 
-        # Set work item state to active
-        rdb.task_update(task.to_dict())
+        task.log("info", f"Assigned worker {task.worker_id}")
 
-        log.info(f"Sending task: {task.id} to worker: {task.worker_id}")
+        return task.id
 
-        return task.to_json()
+    async def sub(self, msg):
+        """
+        Callback function called for every message
+        coming in from the workers requesting new work
+        """
+        try:
+            # Process request for task from worker
+            request = json.loads(msg.data.decode())
+
+            if request['message'] == "new":
+                worker_id = request['worker_id']
+
+                task_id = self.prep_task(worker_id)
+
+                if task_id:
+                    await nc.publish(subject=msg.reply, payload=task_id.encode())
+
+        except Exception as e:
+            error_str = f"the Distributor threw an unhandled exception:\n{e}\n{traceback.format_exc()}\n{e.args}"
+            log.error(error_str)
+
+            raise
+
+    async def main(self, loop):
+        """
+        This is the main loop that connects to the NATS message queue
+        """
+
+        log.info(f"Starting nats client. Server: {config.NATS_ENDPOINT}")
+        await nc.connect(servers=[config.NATS_ENDPOINT], loop=loop)
+
+        log.info(f"Connected to {config.NATS_ENDPOINT}")
+        await nc.subscribe(subject="task", queue="workers", cb=self.sub)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    d = Distributor()
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(run(loop))
+    loop.run_until_complete(d.main(loop))
     loop.run_forever()
     loop.close()
