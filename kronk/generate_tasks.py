@@ -19,7 +19,6 @@ for _ in range(100):
     task.workload = random_string
     task.state = State.READY
     task.id = str(uuid4())
-    task.time_updated = task.time()
 
     log.info(f"Generating task: {random_string}")
 
