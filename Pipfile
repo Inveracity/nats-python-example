@@ -5,17 +5,19 @@ verify_ssl = true
 
 [dev-packages]
 flake8 = "*"
+flake8-isort = "*"
+autopep8 = "*"
 
 [packages]
-asyncio-nats-client = "*"
-rethinkdb = "*"
+asyncio-nats-client = "==0.11.4"
+rethinkdb = "==2.4.8"
 
 [requires]
 python_version = "3.8"
 
 [scripts]
-init = "python kronk/database.py"
-worker = "python kronk/worker.py"
-distributor = "python kronk/distributor.py"
-generate = "python kronk/generate_tasks.py"
 lint = "python -m flake8"
+init = "python -m kronk.database"
+worker = "python -m kronk.worker"
+generate = "python -m kronk.generate_tasks"
+distributor = "python -m kronk.distributor"
