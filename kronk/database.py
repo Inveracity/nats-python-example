@@ -1,16 +1,41 @@
-import time
 import logging
-from sys import exit
-
-from config import config
+import sys
+import time
+from typing import Optional
 
 from rethinkdb import r
-from rethinkdb.net import DefaultConnection
 from rethinkdb.errors import ReqlAuthError
 from rethinkdb.errors import ReqlDriverError
+from rethinkdb.net import DefaultConnection
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)-7s]: %(message)s')
+from kronk.config import Config
+from kronk.task import Task
+
+config = Config()
+
 log = logging.getLogger(__name__)
+
+
+def rdb_connection(func):
+    """
+    Decorator for handling connection retries
+    """
+
+    def inner_function(self, *args, **kwargs):
+        try:
+            # Attempt connecting to rethinkdb
+            self.connect_with_retry()
+
+            # wait for shards to be ready
+            self.t.wait(timeout=4).run(self.conn)
+
+            # run the query
+            return func(self, *args, **kwargs)
+
+        except Exception as e:
+            log.error(f"Error occured in function call {func.__name__}: {e}")
+
+    return inner_function
 
 
 class Rethink:
@@ -20,14 +45,15 @@ class Rethink:
         table='tasks',
         user="admin",
         password=None,
-        indexes=['time_last']
+        indexes=['timestamp_updated']
     ):
-        self.HOST    = config["rdb_endpoint"]
-        self.PW      = config['rdb_password']
-        self.USER    = user
-        self.DB      = database
-        self.TABLE   = table
+        self.HOST = config.DB_HOST
+        self.PW = config.DB_PASS
+        self.USER = user
+        self.DB = database
+        self.TABLE = table
         self.INDEXES = indexes
+        self.t = r.table(self.TABLE)
 
         self.conn = DefaultConnection(
             host=self.HOST,
@@ -72,7 +98,7 @@ class Rethink:
 
         except ReqlDriverError as err:
             log.error(f"rethinkdb failed to initialise: {err}")
-            exit(1)
+            sys.exit(1)
 
     def connect(self):
         if self.conn.is_open():
@@ -89,7 +115,7 @@ class Rethink:
 
                 except ReqlAuthError as err:
                     log.fatal(err)
-                    exit(1)
+                    sys.exit(1)
 
                 except Exception:
                     log.info(f"connecting to database - attempt {x}")
@@ -98,35 +124,65 @@ class Rethink:
                 break
 
             except KeyboardInterrupt:
-                exit(0)
+                sys.exit(0)
 
-    def task_get_new(self) -> dict:
-        """ fetch a single work item in ready state """
-
-        self.connect_with_retry()
-
-        t = r.table(self.TABLE)
-        t.wait(timeout=1).run(self.conn)  # wait for shards to be ready
-        ret = t.order_by(index='time_last').filter({"state": "ready"}).limit(1).run(self.conn)
+    @rdb_connection
+    def task_get_new(self) -> Task:
+        """
+        fetch a single work item in ready state
+        """
+        ret = self.t.order_by(index='timestamp_updated').filter({"state": "ready", "worker_id": ""}).limit(1).run(self.conn)
 
         try:
-            task = list(ret)[0]
+            task = Task().from_dict(list(ret)[0])
+
         except IndexError:
-            task = {}
+            task = None
 
         return task
 
-    def task_create(self, task: dict) -> None:
+    @rdb_connection
+    def task_get_by_id(self, task_id: str) -> Optional[Task]:
+        """
+        Get task by ID
+
+        Used by the worker to query for the task using
+        the task ID received from the distributor
+        """
+        ret = self.t.get(task_id).run(self.conn)
+
+        if ret is None:
+            return None
+        task = Task().from_dict(ret)
+        return task
+
+    @rdb_connection
+    def task_create(self, task: Task) -> None:
         """ Insert new work item """
+        return self.t.insert(task.to_dict()).run(self.conn)
 
-        self.connect_with_retry()
-        return r.table(self.TABLE).insert(task).run(self.conn)
-
+    @rdb_connection
     def task_update(self, task: dict) -> None:
         """
         update work item state
         valid states should be: "ready", "active", "complete", "failed"
         """
+        self.t.insert(task, conflict="update").run(self.conn)
 
-        self.connect_with_retry()
-        r.table(self.TABLE).insert(task, conflict="update").run(self.conn)
+    @rdb_connection
+    def task_assign_worker(self, task: Task) -> bool:
+        """
+        Ensure task is only assigned one worker
+        """
+
+        ret = self.t.get(task.id).run(self.conn)
+
+        worker_id = dict(ret)['worker_id']
+
+        if worker_id != "":
+            return False
+
+        worker = {"worker_id": task.worker_id}
+        self.t.get(task.id).update(worker, durability="hard", return_changes=False).run(self.conn)
+
+        return True
