@@ -96,6 +96,10 @@ class Worker:
             # Update task in database
             rdb.task_update(task.to_dict())
 
+        except asyncio.TimeoutError:
+            log.error("Worker timed out while waiting for distributor to respond")
+            pass
+
         except Exception:
             log.fatal(traceback.format_exc())
             sys.exit(1)
