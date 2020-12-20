@@ -67,7 +67,7 @@ class Worker:
             task_id = response.data.decode()
 
             # If the response is nothing
-            if payload == "nothing":
+            if task_id == "nothing":
                 return
 
             log.debug(f"received task id {payload}")
