@@ -11,7 +11,7 @@ Working out the best way to do request/reply for distributing tasks
 1. Requests for new workloads go into the database
 2. A worker continuously polls the distributor for new tasks
 3. For every poll the distributor takes a new task in the `ready` state
-4. The distributor marks the task  as `active` and forwards it to the worker
+4. The distributor marks the task as `active` and forwards it to the worker
 5. The worker processes the task
 6. if the task fails it gets marked as `ready` and attempts increases by 1 and the worker request a new job
 7. if the task succeeds it gets marked as `completed` and the worker requests a new job
@@ -21,21 +21,21 @@ Working out the best way to do request/reply for distributing tasks
 
 ### A few tidbits
 
-This setup works as microservice setup where every component can be scaled to horizontally meaning
-that _Rethinkdb_, _NATS_, _Distributor_ and _Worker_ can all have multiple instances running simultaneously.
+This setup works as microservice setup where every component can be scaled horizontally, meaning
+_Rethinkdb_, _NATS_, the _Distributor_ and the _Worker_ can all have multiple instances running simultaneously.
 
 The _Distributor_ listens for polls on a loadbalanced queue, a feature of _NATS_ that works without configuration.
 
 ## Dependencies
 
-- python 3.8
+- python 3.8+
 - docker-compose
 
 ## Install requirements
 
 ```bash
 pip install pipenv
-pipenv install
+pipenv sync --dev
 ```
 
 ## Run the backend
@@ -43,7 +43,7 @@ pipenv install
 This starts NATS and Rethinkdb 2.4.1
 
 ```bash
-docker-compose up --build -d
+docker-compose up -d rethinkdb nats
 ```
 
 ## Run the code
@@ -54,7 +54,7 @@ Put some fake tasks in the database
 pipenv run generate
 ```
 
-optionally start the distributor and worker in a terminal instead through docker-compose
+Run the worker and distributor
 
 ```bash
 pipenv run distributor
