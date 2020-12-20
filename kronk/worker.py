@@ -63,9 +63,14 @@ class Worker:
             # Tell distributor to send a new task
             task_request = {'worker_id': worker_id, 'message': 'new'}
             payload = json.dumps(task_request)
-            response = await nc.request(subject="task", payload=payload.encode(), timeout=1)
+            response = await nc.request(subject="task", payload=payload.encode(), timeout=5)
             task_id = response.data.decode()
-            log.debug(f"received task id {task_id}")
+
+            # If the response is nothing
+            if payload == "nothing":
+                return
+
+            log.debug(f"received task id {payload}")
             task: Task = rdb.task_get_by_id(task_id)
 
             if not task:
@@ -91,11 +96,6 @@ class Worker:
             # Update task in database
             rdb.task_update(task.to_dict())
 
-        except asyncio.TimeoutError:
-            # Simply wait for a task to come along
-            log.debug("No new task")
-            pass
-
         except Exception:
             log.fatal(traceback.format_exc())
             sys.exit(1)
@@ -112,7 +112,7 @@ class Worker:
 
         while not graceful.termination:
             await self.next_task(worker_id)
-            time.sleep(0.1)
+            time.sleep(1)
 
         if graceful.termination:
             sys.exit(0)

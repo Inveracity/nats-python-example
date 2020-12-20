@@ -13,7 +13,7 @@ asyncio-nats-client = "==0.11.4"
 rethinkdb = "==2.4.8"
 
 [requires]
-python_version = "3.8"
+python_version = "3"
 
 [scripts]
 lint = "python -m flake8"
