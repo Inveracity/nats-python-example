@@ -2,6 +2,7 @@ import logging
 import sys
 import time
 from typing import Optional
+import traceback
 
 from rethinkdb import r
 from rethinkdb.errors import ReqlAuthError
@@ -32,8 +33,8 @@ def rdb_connection(func):
             # run the query
             return func(self, *args, **kwargs)
 
-        except Exception as e:
-            log.error(f"Error occured in function call {func.__name__}: {e}")
+        except Exception:
+            log.error(f"Error occured in function call {func.__name__}:\n {traceback.format_exc()}")
 
     return inner_function
 
@@ -53,7 +54,7 @@ class Rethink:
         self.DB = database
         self.TABLE = table
         self.INDEXES = indexes
-        self.t = r.table(self.TABLE)
+        self.t = r.db(self.DB).table(self.TABLE)
 
         self.conn = DefaultConnection(
             host=self.HOST,
@@ -66,6 +67,11 @@ class Rethink:
             ssl=None,
             _handshake_version=None
         )
+
+    def initialise(self):
+        """
+        Set up database with tables and indexes
+        """
 
         self.connect_with_retry()
 
@@ -111,7 +117,8 @@ class Rethink:
         for x in range(10):
             try:
                 try:
-                    self.connect()
+                    if not self.conn.is_open():
+                        self.connect()
 
                 except ReqlAuthError as err:
                     log.fatal(err)
@@ -183,6 +190,6 @@ class Rethink:
             return False
 
         worker = {"worker_id": task.worker_id}
-        self.t.get(task.id).update(worker, durability="hard", return_changes=False).run(self.conn)
+        self.t.get(task.id).update(worker, return_changes=False).run(self.conn)
 
         return True

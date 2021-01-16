@@ -16,6 +16,8 @@ config = Config()
 nc = NATS()
 rdb = Rethink()
 
+rdb.initialise()
+
 
 class Distributor:
     """
