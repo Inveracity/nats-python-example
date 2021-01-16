@@ -24,8 +24,6 @@ def make_task() -> dict:
 
 
 random_task1 = make_task().to_dict()
-random_task2 = make_task().to_dict()
-
 task_with_specific_id = make_task().to_dict()
 task_with_specific_id["id"] = "1234"
 
@@ -37,7 +35,6 @@ db = MockThink({
             "tables": {
                 "tasks": [
                     random_task1,
-                    random_task2,
                     task_with_specific_id,
                 ]
             }

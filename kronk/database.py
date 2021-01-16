@@ -1,8 +1,8 @@
 import logging
 import sys
 import time
-from typing import Optional
 import traceback
+from typing import Optional
 
 from rethinkdb import r
 from rethinkdb.errors import ReqlAuthError
