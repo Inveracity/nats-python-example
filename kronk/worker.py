@@ -5,9 +5,11 @@ import random
 import sys
 import time
 import traceback
+from typing import Tuple
 import uuid
 
 from nats.aio.client import Client as Nats
+from nats.errors import NoRespondersError
 
 from kronk.config import Config
 from kronk.database import Rethink
@@ -24,13 +26,15 @@ rdb = Rethink()
 
 
 class Worker:
-    def simulation(self) -> (int, str):
-        """ Create a random execution time for a simulated job """
+    def simulation(self) -> Tuple[int, str]:
+        """Create a random execution time for a simulated job"""
 
-        task_shor = [1] * 60           # 60% chance of a job taking a short time
-        task_medi = [2] * 30           # 30% chance of a job taking a medium time
-        task_long = [3] * 10           # 10% chance of a job taking a long time
-        task_fail = ["ready"] * 50     # 50% chance of a job failing, set ready state to retry the job
+        task_shor = [1] * 60  # 60% chance of a job taking a short time
+        task_medi = [2] * 30  # 30% chance of a job taking a medium time
+        task_long = [3] * 10  # 10% chance of a job taking a long time
+        task_fail = [
+            "ready"
+        ] * 50  # 50% chance of a job failing, set ready state to retry the job
         task_comp = ["complete"] * 50  # 50% chance of a job completing
 
         task_lengths = task_shor + task_medi + task_long
@@ -42,7 +46,7 @@ class Worker:
         return task_length, task_state
 
     def do_work(self, task: Task) -> Task:
-        """ Simulated worker, replace this code with actual workloads """
+        """Simulated worker, replace this code with actual workloads"""
 
         # Get simulation values
         length, state = self.simulation()
@@ -57,13 +61,15 @@ class Worker:
         return task
 
     async def next_task(self, worker_id: str):
-        """ Request a new task from the distributor """
+        """Request a new task from the distributor"""
 
         try:
             # Tell distributor to send a new task
-            task_request = {'worker_id': worker_id, 'message': 'new'}
+            task_request = {"worker_id": worker_id, "message": "new"}
             payload = json.dumps(task_request)
-            response = await nc.request(subject="task", payload=payload.encode(), timeout=5)
+            response = await nc.request(
+                subject="task", payload=payload.encode(), timeout=5
+            )
             task_id = response.data.decode()
 
             # If the response is nothing
@@ -98,21 +104,23 @@ class Worker:
 
         except asyncio.TimeoutError:
             log.error("Worker timed out while waiting for distributor to respond")
-            pass
 
-        except Exception:
+        except NoRespondersError:
+            log.warning("Waiting for distributor to respond")
+            await asyncio.sleep(5)
+
+        except Exception:  # pylint: disable=broad-except
             log.fatal(traceback.format_exc())
             sys.exit(1)
 
     async def main(self):
-        """ Start the worker loop """
-        loop = asyncio.get_running_loop()
+        """Start the worker loop"""
 
         worker_id = str(uuid.uuid4())[:8]
         log.info(f"Starting worker {worker_id}")
 
         # Connect to nats servers
-        await nc.connect(servers=config.NATS_ENDPOINT, loop=loop)
+        await nc.connect(servers=config.nats_endpoint)
 
         while not graceful.termination:
             await self.next_task(worker_id)
@@ -122,6 +130,6 @@ class Worker:
             sys.exit(0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     w = Worker()
     asyncio.run(w.main())

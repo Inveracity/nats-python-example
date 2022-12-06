@@ -1,7 +1,9 @@
 {
-    "python.linting.pylintEnabled": false,
-    "python.linting.flake8Enabled": true,
-    "python.linting.enabled": true,
-    "editor.formatOnSave": true,
-    "python.pythonPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe"
+  "python.linting.pylintEnabled": true,
+  "python.formatting.provider": "black",
+  "python.linting.enabled": true,
+  "editor.formatOnSave": true,
+  "[python]": {
+    "editor.tabSize": 4
+  }
 }

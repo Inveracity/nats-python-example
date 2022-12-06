@@ -2,7 +2,7 @@ from random import sample
 from string import ascii_letters
 from uuid import uuid4
 
-from mockthink import MockThink
+from rethinkdb_mock import MockThink
 
 from kronk.database import Rethink
 from kronk.task import State
@@ -29,18 +29,20 @@ task_with_specific_id["id"] = "1234"
 
 r = Rethink()
 
-db = MockThink({
-    "dbs": {
-        "work": {
-            "tables": {
-                "tasks": [
-                    random_task1,
-                    task_with_specific_id,
-                ]
+db = MockThink(
+    {
+        "dbs": {
+            "work": {
+                "tables": {
+                    "tasks": [
+                        random_task1,
+                        task_with_specific_id,
+                    ]
+                }
             }
         }
     }
-})
+)
 
 
 def test_task_get_new(mocker):

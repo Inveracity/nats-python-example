@@ -1,3 +1,4 @@
+# pylint: disable=arguments-renamed
 import logging
 import sys
 
@@ -15,7 +16,7 @@ class StdOutFilter(logging.Filter):
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-formatter = logging.Formatter('%(asctime)s [%(levelname)-7s] %(message)s')
+formatter = logging.Formatter("%(asctime)s [%(levelname)-7s] %(message)s")
 
 h1 = logging.StreamHandler(sys.stdout)
 h1.setLevel(logging.DEBUG)

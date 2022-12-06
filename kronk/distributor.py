@@ -39,7 +39,10 @@ class Distributor:
         assigned: bool = rdb.task_assign_worker(task)
 
         if not assigned:
-            task.log("warning", f"Task is already assigned to worker {task.worker_id}")
+            task.log(
+                "warning",
+                f"Task is already assigned to worker {task.worker_id}",
+            )
             return "nothing"
 
         task.log("info", f"Assigned worker {task.worker_id}")
@@ -55,34 +58,36 @@ class Distributor:
             # Process request for task from worker
             request = json.loads(msg.data.decode())
 
-            if request['message'] == "new":
-                worker_id = request['worker_id']
-
+            if request["message"] == "new":
+                worker_id = request["worker_id"]
                 task_id = self.prep_task(worker_id)
 
                 await nc.publish(subject=msg.reply, payload=task_id.encode())
 
         except Exception as e:
-            error_str = f"the Distributor threw an unhandled exception:\n{e}\n{traceback.format_exc()}\n{e.args}"
+            error_str = (
+                "the Distributor threw an unhandled exception:\n"
+                f"{e}\n{traceback.format_exc()}\n{e.args}"
+            )
             log.error(error_str)
 
             raise
 
-    async def main(self, loop):
+    async def main(self):
         """
         This is the main loop that connects to the NATS message queue
         """
 
-        log.info(f"Starting nats client. Server: {config.NATS_ENDPOINT}")
-        await nc.connect(servers=[config.NATS_ENDPOINT], loop=loop)
+        log.info(f"Starting nats client. Server: {config.nats_endpoint}")
+        await nc.connect(servers=[config.nats_endpoint])
 
-        log.info(f"Connected to {config.NATS_ENDPOINT}")
+        log.info(f"Connected to {config.nats_endpoint}")
         await nc.subscribe(subject="task", queue="workers", cb=self.sub)
 
 
 if __name__ == "__main__":
     d = Distributor()
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(d.main(loop))
+    loop.run_until_complete(d.main())
     loop.run_forever()
     loop.close()

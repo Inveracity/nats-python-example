@@ -8,9 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 class Task:
-
     def __init__(self):
-        self.id = ""
+        self.id = ""  # pylint: disable=invalid-name
         self.state = ""
         self.workload = ""
         self.worker_id = ""
@@ -21,10 +20,11 @@ class Task:
         """
         Rethinkdb compatible datetime
         """
-        return datetime.now(r.make_timezone('00:00'))
+        return datetime.now(r.make_timezone("00:00"))
 
     @property
     def timestamp_updated(self):
+        """Current time as a property"""
         return self.time()
 
     def to_dict(self) -> dict:
@@ -41,15 +41,15 @@ class Task:
         superdict.update(property_dict)
         return superdict
 
-    def from_dict(self, d):
+    def from_dict(self, d):  # pylint: disable=invalid-name
         """
         Convert from a dictionary object to class properties
         """
-        self.id = d.get('id')
-        self.state = d.get('state')
-        self.attempts = d.get('attempts', 0)
-        self.worker_id = d.get('worker_id')
-        self.workload = d.get('workload')
+        self.id = d.get("id")
+        self.state = d.get("state")
+        self.attempts = d.get("attempts", 0)
+        self.worker_id = d.get("worker_id")
+        self.workload = d.get("workload")
 
         return self
 

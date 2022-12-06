@@ -4,23 +4,24 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-flake8 = "*"
-flake8-isort = "*"
-autopep8 = "*"
+pylint = "*"
+black = "*"
 pytest = "*"
 pytest-cov = "*"
 pytest-mock = "*"
-mockthink = {git = "https://github.com/inveracity/mockthink"}
+rethinkdb_mock = "*"
 
 [packages]
-asyncio-nats-client = "==0.11.4"
-rethinkdb = "==2.4.8"
+nats-py = "*"
+rethinkdb = "==2.4.9"
 
 [requires]
 python_version = "3"
 
 [scripts]
-lint = "python -m flake8"
+lint = "python -m pylint kronk"
+black = "python -m black kronk"
+isort = "python -m isort kronk"
 init = "python -m kronk.database"
 worker = "python -m kronk.worker"
 generate = "python -m kronk.generate_tasks"
