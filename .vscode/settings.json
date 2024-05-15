@@ -1,9 +1,13 @@
 {
-  "python.linting.pylintEnabled": true,
-  "python.formatting.provider": "black",
-  "python.linting.enabled": true,
-  "editor.formatOnSave": true,
   "[python]": {
-    "editor.tabSize": 4
-  }
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "always"
+    },
+  },
+  "isort.args": [
+    "--profile",
+    "black"
+  ],
 }

@@ -34,16 +34,17 @@ The _Distributor_ listens for polls on a loadbalanced queue, a feature of _NATS_
 ## Install requirements
 
 ```bash
-pip install pipenv
-pipenv sync --dev
+pip install poetry
+poetry install
 ```
 
 ## Run the backend
 
-This starts NATS and Rethinkdb 2.4.1
+This starts NATS and Rethinkdb 2.4.4
 
 ```bash
-docker-compose up -d rethinkdb nats
+docker compose build
+docker compose up -d rethinkdb nats
 ```
 
 ## Run the code
@@ -51,14 +52,14 @@ docker-compose up -d rethinkdb nats
 Put some fake tasks in the database
 
 ```bash
-pipenv run generate
+make generate
 ```
 
 Run the worker and distributor
 
 ```bash
-pipenv run distributor
-pipenv run worker
+make distributor
+make worker
 ```
 
 ## Rethinkdb
@@ -67,7 +68,7 @@ You can open the rethinkdb webinterface with `http://localhost:8080`
 
 In the data explorer try the query
 
-```javascript
+```js
 r.db("work").table("tasks").changes()
 ```
 

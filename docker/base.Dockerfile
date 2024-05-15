@@ -1,15 +1,13 @@
-FROM python:3.8-slim-buster
+FROM python:3.12-bookworm
 
-ENV PIPENV_VENV_IN_PROJECT=1
-ENV PIPENV_IGNORE_VIRTUALENVS=1
-ENV PIPENV_NOSPIN=1
-ENV PIPENV_HIDE_EMOJIS=1
+ENV POETRY_VIRTUALENVS_IN_PROJECT=1
 ENV PYTHONUNBUFFERED=0
 
-RUN pip install pipenv
+RUN apt update -qq && apt install -y python3-pip
+RUN pip install poetry
 
 RUN mkdir -p /code
 COPY . /code
 WORKDIR /code
 
-RUN pipenv install
+RUN poetry install
