@@ -1,4 +1,3 @@
-version: '3.7'
 services:
   nats:
     image: nats:2-alpine
@@ -9,16 +8,14 @@ services:
     command: nats-server -m 8222 -D
 
   rethinkdb:
-    image: rethinkdb:2.4.1
+    image: rethinkdb:2.4.4-bookworm-slim
     container_name: rethinkdb
     ports:
       - "8080:8080"
       - "28015:28015"
     command: rethinkdb -d /data/rdb --bind 0.0.0.0 --server-tag default --http-port 8080 --driver-port 28015
     volumes:
-      - type: bind
-        source: /srv # Swap this for something more appropriate
-        target: /data/rdb
+      - ${PWD}/database:/data/rdb:rw
 
   worker:
     image: kronk:latest
@@ -26,7 +23,7 @@ services:
     build:
       context: .
       dockerfile: docker/base.Dockerfile
-    command: pipenv run worker
+    command: poetry run python -m kronk.worker
     environment:
       - DB_HOST=rethinkdb
       - DB_PORT=28015
@@ -39,12 +36,9 @@ services:
     build:
       context: .
       dockerfile: docker/base.Dockerfile
-    command: pipenv run distributor
+    command: poetry run python -m kronk.distributor
     environment:
       - DB_HOST=rethinkdb
       - DB_PORT=28015
       - NATS_HOST=nats
       - NATS_PORT=4222
-
-volumes:
-  rdbdata:

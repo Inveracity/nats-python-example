@@ -1,30 +1,33 @@
-[project]
-name = "kronk"
-version = "0.1.0"
-description = "A minimal example of running a request/reply system with workers"
+[tool.poetry]
+name = "nats-python-example"
+version = "1.0.0"
+description = ""
+authors = ["Inveracity <cbaklid@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.12"
+nats-py = "*"
+rethinkdb = "2.4.9"
+
+[tool.poetry.dev-dependencies]
+pytest = "*"
+pytest-cov = "*"
+pytest-mock = "*"
+rethinkdb_mock = "*"
+setuptools = "^69.5.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.black]
-line-length = 90
+line-length = 120
 
 [tool.isort]
 profile = "google"
 src_paths = "kronk"
 force_single_line = "True"
-line_length = 90
-
-[tool.pylint.messages_control]
-max-line-length = 90
-disable = [
-    "too-few-public-methods",
-    "missing-class-docstring",
-    "missing-module-docstring",
-    "logging-fstring-interpolation",
-    "invalid-name"
-]
-
-[tool.pylint.design]
-# limiting the number of returns might discourage
-# the use of guard clauses. So we increase the
-# allowed number of returns from 6 to 8
-max-returns = 8
-max-attributes = 9
+line_length = 120
