@@ -65,10 +65,7 @@ class Distributor:
                 await nc.publish(subject=msg.reply, payload=task_id.encode())
 
         except Exception as e:
-            error_str = (
-                "the Distributor threw an unhandled exception:\n"
-                f"{e}\n{traceback.format_exc()}\n{e.args}"
-            )
+            error_str = f"the Distributor threw an unhandled exception:\n{e}\n{traceback.format_exc()}\n{e.args}"
             log.error(error_str)
 
             raise

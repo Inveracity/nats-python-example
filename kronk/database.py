@@ -2,7 +2,8 @@ import logging
 import sys
 import time
 import traceback
-from typing import Optional, Callable
+from typing import Callable
+from typing import Optional
 
 from rethinkdb import r
 from rethinkdb.errors import ReqlAuthError
@@ -34,10 +35,7 @@ def rdb_connection(func):
             return func(self, *args, **kwargs)
 
         except Exception:  # pylint: disable=broad-except
-            log.error(
-                f"Error occured in function call {func.__name__}:\n "
-                f"{traceback.format_exc()}"
-            )
+            log.error(f"Error occured in function call {func.__name__}:\n " f"{traceback.format_exc()}")
             raise
 
     return inner_function
@@ -108,9 +106,7 @@ class Rethink:
         if self.conn.is_open():
             self.conn.close()
 
-        self.conn = r.connect(
-            host=self.HOST, db=self.DB, user=self.USER, password=self.PW
-        )
+        self.conn = r.connect(host=self.HOST, db=self.DB, user=self.USER, password=self.PW)
 
     def connect_with_retry(self):
         """Attempt to reconnect"""
