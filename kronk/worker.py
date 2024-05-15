@@ -5,8 +5,8 @@ import random
 import sys
 import time
 import traceback
-from typing import Tuple
 import uuid
+from typing import Tuple
 
 from nats.aio.client import Client as Nats
 from nats.errors import NoRespondersError
@@ -32,9 +32,7 @@ class Worker:
         task_shor = [1] * 60  # 60% chance of a job taking a short time
         task_medi = [2] * 30  # 30% chance of a job taking a medium time
         task_long = [3] * 10  # 10% chance of a job taking a long time
-        task_fail = [
-            "ready"
-        ] * 50  # 50% chance of a job failing, set ready state to retry the job
+        task_fail = ["ready"] * 50  # 50% chance of a job failing, set ready state to retry the job
         task_comp = ["complete"] * 50  # 50% chance of a job completing
 
         task_lengths = task_shor + task_medi + task_long
@@ -68,7 +66,9 @@ class Worker:
             task_request = {"worker_id": worker_id, "message": "new"}
             payload = json.dumps(task_request)
             response = await nc.request(
-                subject="task", payload=payload.encode(), timeout=5
+                subject="task",
+                payload=payload.encode(),
+                timeout=5,
             )
             task_id = response.data.decode()
 

@@ -22,12 +22,3 @@ setuptools = "^69.5.1"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.black]
-line-length = 120
-
-[tool.isort]
-profile = "google"
-src_paths = "kronk"
-force_single_line = "True"
-line_length = 120
