@@ -17,7 +17,7 @@ pytest = "*"
 pytest-cov = "*"
 pytest-mock = "*"
 rethinkdb_mock = "*"
-setuptools = "^69.5.1"
+setuptools = "^70.0.0"
 
 [build-system]
 requires = ["poetry-core"]
