@@ -194,3 +194,8 @@ class Rethink:
         self.t.get(task.id).update(worker, return_changes=False).run(self.conn)
 
         return True
+
+
+if __name__ == "__main__":
+    rdb = Rethink()
+    rdb.initialise()

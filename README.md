@@ -52,6 +52,7 @@ docker compose up -d rethinkdb nats
 Put some fake tasks in the database
 
 ```bash
+make init
 make generate
 ```
 
