@@ -23,7 +23,7 @@ services:
     build:
       context: .
       dockerfile: docker/base.Dockerfile
-    command: poetry run python -m kronk.worker
+    command: uv run python -m kronk.worker
     environment:
       - DB_HOST=rethinkdb
       - DB_PORT=28015
@@ -36,7 +36,7 @@ services:
     build:
       context: .
       dockerfile: docker/base.Dockerfile
-    command: poetry run python -m kronk.distributor
+    command: uv run python -m kronk.distributor
     environment:
       - DB_HOST=rethinkdb
       - DB_PORT=28015

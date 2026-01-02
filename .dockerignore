@@ -5,6 +5,6 @@ docker-compose.yaml
 LICENSE
 README.md
 docker
-poetry.lock
+uv.lock
 .pytest_cache
 .vscode

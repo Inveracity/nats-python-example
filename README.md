@@ -34,8 +34,8 @@ The _Distributor_ listens for polls on a loadbalanced queue, a feature of _NATS_
 ## Install requirements
 
 ```bash
-pip install poetry
-poetry install
+pip install uv
+uv sync
 ```
 
 ## Run the backend

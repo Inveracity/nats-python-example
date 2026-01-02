@@ -1,19 +1,19 @@
 .venv:
-	poetry install
+	uv sync
 
 test: .venv
-	poetry run pytest --cov kronk -v
+	uv run pytest --cov kronk -v
 
 init:
-	poetry run python -m kronk.database
+	uv run python -m kronk.database
 
 worker:
-	poetry run python -m kronk.worker
+	uv run python -m kronk.worker
 
 generate:
-	poetry run python -m kronk.generate_tasks
+	uv run python -m kronk.generate_tasks
 
 distributor:
-	poetry run python -m kronk.distributor
+	uv run python -m kronk.distributor
 
 .PHONY: test init worker generate distributor
